@@ -109,7 +109,26 @@ function App() {
                     const message = decodeErr instanceof AudioError
                         ? getErrorMessage(decodeErr)
                         : 'Failed to decode audio data.';
-                    toast.error(message, { duration: 5000 });
+
+                    if (isRetryableError(decodeErr)) {
+                        toast.error(
+                            <div className="flex items-center gap-2">
+                                <span>{message}</span>
+                                <button
+                                    onClick={() => {
+                                        toast.dismiss();
+                                        handleGenerate(params);
+                                    }}
+                                    className="text-xs bg-white/20 hover:bg-white/30 px-2 py-1 rounded"
+                                >
+                                    Retry
+                                </button>
+                            </div>,
+                            { duration: 8000 }
+                        );
+                    } else {
+                        toast.error(message, { duration: 5000 });
+                    }
                 }
             }
         } catch (error: unknown) {
