@@ -1,6 +1,7 @@
-import React, { useRef, useState, useEffect } from 'react';
+import { useRef, useState, useEffect, useImperativeHandle, forwardRef, useCallback } from 'react';
 import type { InstrumentAudioResult } from '../types/music';
 import { base64ToBlobUrl } from '../utils/audio';
+import type { PlaybackControls } from '../hooks/useKeyboardShortcuts';
 
 interface PlaybackState {
     isPlaying: boolean;
@@ -14,7 +15,12 @@ interface AudioPlayerProps {
     onPlaybackChange?: (state: PlaybackState) => void;
 }
 
-export const AudioPlayer: React.FC<AudioPlayerProps> = ({ audioUrl, audioResults = [], onPlaybackChange }) => {
+export interface AudioPlayerRef {
+    controls: PlaybackControls;
+}
+
+export const AudioPlayer = forwardRef<AudioPlayerRef, AudioPlayerProps>(
+    ({ audioUrl, audioResults = [], onPlaybackChange }, ref) => {
     const audioRef = useRef<HTMLAudioElement>(null);
     const [isPlaying, setIsPlaying] = useState(false);
     const [progress, setProgress] = useState(0);
@@ -59,7 +65,7 @@ export const AudioPlayer: React.FC<AudioPlayerProps> = ({ audioUrl, audioResults
         }
     }, [audioUrl]);
 
-    const togglePlay = () => {
+    const togglePlay = useCallback(() => {
         if (!audioRef.current || !audioUrl) return;
         if (isPlaying) {
             audioRef.current.pause();
@@ -67,7 +73,24 @@ export const AudioPlayer: React.FC<AudioPlayerProps> = ({ audioUrl, audioResults
             audioRef.current.play();
         }
         setIsPlaying(!isPlaying);
-    };
+    }, [audioUrl, isPlaying]);
+
+    const seek = useCallback((time: number) => {
+        if (audioRef.current) {
+            audioRef.current.currentTime = time;
+        }
+    }, []);
+
+    // Expose controls for keyboard shortcuts
+    useImperativeHandle(ref, () => ({
+        controls: {
+            togglePlay,
+            seek,
+            getCurrentTime: () => audioRef.current?.currentTime ?? 0,
+            getDuration: () => audioRef.current?.duration ?? 0,
+            isReady: !!audioUrl,
+        },
+    }), [togglePlay, seek, audioUrl]);
 
     const handleTimeUpdate = () => {
         if (audioRef.current) {
@@ -174,4 +197,4 @@ export const AudioPlayer: React.FC<AudioPlayerProps> = ({ audioUrl, audioResults
             </div>
         </div>
     );
-};
+});

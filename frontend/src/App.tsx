@@ -1,12 +1,14 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { ControlPanel } from './components/ControlPanel';
-import { AudioPlayer } from './components/AudioPlayer';
-import { MixerPlayer } from './components/MixerPlayer';
+import { AudioPlayer, type AudioPlayerRef } from './components/AudioPlayer';
+import { MixerPlayer, type MixerPlayerRef } from './components/MixerPlayer';
 import { MathDisplay } from './components/MathDisplay';
 import { GenerationProgress } from './components/GenerationProgress';
 import { CompositionHistory } from './components/CompositionHistory';
 import { useGeneration } from './hooks/useGeneration';
 import { useCompositionHistory, type SavedComposition } from './hooks/useCompositionHistory';
+import { useKeyboardShortcuts } from './hooks/useKeyboardShortcuts';
+import type { PlaybackControls } from './hooks/useKeyboardShortcuts';
 import { base64ToBlobUrl } from './utils/audio';
 import { warmAudioContext, closeAudioContext } from './utils/audioContext';
 import { getErrorMessage, isRetryableError, AudioError } from './types/errors';
@@ -33,6 +35,32 @@ function App() {
 
     const generation = useGeneration();
     const compositionHistory = useCompositionHistory();
+
+    // Refs for player controls (keyboard shortcuts)
+    const audioPlayerRef = useRef<AudioPlayerRef>(null);
+    const mixerPlayerRef = useRef<MixerPlayerRef>(null);
+
+    // Track active controls for keyboard shortcuts
+    // Using state + effect because refs don't trigger re-renders when populated
+    const [activeControls, setActiveControls] = useState<PlaybackControls | null>(null);
+
+    useEffect(() => {
+        // Update controls after player component mounts and ref is populated
+        const updateControls = () => {
+            if (audioResults.length > 1) {
+                setActiveControls(mixerPlayerRef.current?.controls ?? null);
+            } else {
+                setActiveControls(audioPlayerRef.current?.controls ?? null);
+            }
+        };
+
+        // Small delay to ensure ref is populated after render
+        const timer = setTimeout(updateControls, 0);
+        return () => clearTimeout(timer);
+    }, [audioResults.length, audioUrl]);
+
+    // Enable keyboard shortcuts for playback control
+    useKeyboardShortcuts({ controls: activeControls });
 
     // Centralized blob URL cleanup
     const cleanupBlobUrl = useCallback(() => {
@@ -309,9 +337,9 @@ function App() {
 
             {/* Footer Player - Use MixerPlayer for multi-track, AudioPlayer for single */}
             {audioResults.length > 1 ? (
-                <MixerPlayer audioResults={audioResults} onPlaybackChange={setPlaybackState} />
+                <MixerPlayer ref={mixerPlayerRef} audioResults={audioResults} onPlaybackChange={setPlaybackState} />
             ) : (
-                <AudioPlayer audioUrl={audioUrl} audioResults={audioResults} onPlaybackChange={setPlaybackState} />
+                <AudioPlayer ref={audioPlayerRef} audioUrl={audioUrl} audioResults={audioResults} onPlaybackChange={setPlaybackState} />
             )}
         </div>
     );

@@ -1,6 +1,7 @@
-import React from 'react';
+import React, { useEffect, useImperativeHandle, forwardRef } from 'react';
 import { useAudioMixer } from '../hooks/useAudioMixer';
 import type { InstrumentAudioResult, Instrument } from '../types/music';
+import type { PlaybackControls } from '../hooks/useKeyboardShortcuts';
 
 interface PlaybackState {
     isPlaying: boolean;
@@ -13,6 +14,10 @@ interface MixerPlayerProps {
     onPlaybackChange?: (state: PlaybackState) => void;
 }
 
+export interface MixerPlayerRef {
+    controls: PlaybackControls;
+}
+
 const INSTRUMENT_ICONS: Record<Instrument, string> = {
     erhu: '🎻',
     guzheng: '🎸',
@@ -20,11 +25,23 @@ const INSTRUMENT_ICONS: Record<Instrument, string> = {
     dizi: '🪈',
 };
 
-export const MixerPlayer: React.FC<MixerPlayerProps> = ({ audioResults, onPlaybackChange }) => {
+export const MixerPlayer = forwardRef<MixerPlayerRef, MixerPlayerProps>(
+    ({ audioResults, onPlaybackChange }, ref) => {
     const mixer = useAudioMixer(audioResults);
 
+    // Expose controls for keyboard shortcuts
+    useImperativeHandle(ref, () => ({
+        controls: {
+            togglePlay: mixer.togglePlay,
+            seek: mixer.seek,
+            getCurrentTime: () => mixer.currentTime,
+            getDuration: () => mixer.duration,
+            isReady: mixer.isReady,
+        },
+    }), [mixer.togglePlay, mixer.seek, mixer.currentTime, mixer.duration, mixer.isReady]);
+
     // Notify parent of playback state changes
-    React.useEffect(() => {
+    useEffect(() => {
         onPlaybackChange?.({
             isPlaying: mixer.isPlaying,
             currentTime: mixer.currentTime,
@@ -138,4 +155,4 @@ export const MixerPlayer: React.FC<MixerPlayerProps> = ({ audioResults, onPlayba
             </div>
         </div>
     );
-};
+});
