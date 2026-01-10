@@ -8,6 +8,7 @@ import { CompositionHistory } from './components/CompositionHistory';
 import { useGeneration } from './hooks/useGeneration';
 import { useCompositionHistory, type SavedComposition } from './hooks/useCompositionHistory';
 import { base64ToBlobUrl } from './utils/audio';
+import { warmAudioContext, closeAudioContext } from './utils/audioContext';
 import { getErrorMessage, isRetryableError, AudioError } from './types/errors';
 import { DEFAULTS } from './config/constants';
 import toast, { Toaster } from 'react-hot-toast';
@@ -49,6 +50,25 @@ function App() {
             }
         };
     }, [audioUrl]);
+
+    // Pre-warm AudioContext on first user interaction for faster playback
+    useEffect(() => {
+        const handleInteraction = () => {
+            warmAudioContext();
+            // Remove listeners after first interaction
+            window.removeEventListener('click', handleInteraction);
+            window.removeEventListener('keydown', handleInteraction);
+        };
+
+        window.addEventListener('click', handleInteraction);
+        window.addEventListener('keydown', handleInteraction);
+
+        return () => {
+            window.removeEventListener('click', handleInteraction);
+            window.removeEventListener('keydown', handleInteraction);
+            closeAudioContext();
+        };
+    }, []);
 
     const handleGenerate = async (params: CompositionParams) => {
         // Cleanup previous state

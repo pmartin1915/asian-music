@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import { Tooltip, InfoIcon } from './Tooltip';
 import type { Composition } from '../types/music';
 
@@ -104,7 +104,7 @@ interface AnimatedEuclideanCircleProps {
     role: string;
 }
 
-const AnimatedEuclideanCircle: React.FC<AnimatedEuclideanCircleProps> = ({
+const AnimatedEuclideanCircle = React.memo<AnimatedEuclideanCircleProps>(({
     pattern,
     isPlaying,
     currentBeat,
@@ -122,8 +122,8 @@ const AnimatedEuclideanCircle: React.FC<AnimatedEuclideanCircleProps> = ({
     const beatFraction = currentBeat % patternLength;
     const playheadAngle = (beatFraction / patternLength) * 2 * Math.PI - Math.PI / 2;
 
-    // Count hits for E(k,n) notation
-    const hits = pattern.filter((p) => p === 1).length;
+    // Count hits for E(k,n) notation - memoized since pattern rarely changes
+    const hits = useMemo(() => pattern.filter((p) => p === 1).length, [pattern]);
 
     return (
         <svg width={size} height={size} className="overflow-visible">
@@ -208,10 +208,10 @@ const AnimatedEuclideanCircle: React.FC<AnimatedEuclideanCircleProps> = ({
             </text>
         </svg>
     );
-};
+});
 
 // Euclidean notation showing the pattern
-const EuclideanNotation: React.FC<{ pattern: number[] }> = ({ pattern }) => {
+const EuclideanNotation = React.memo<{ pattern: number[] }>(({ pattern }) => {
     return (
         <div className="flex gap-1 mt-2">
             {pattern.map((hit, i) => (
@@ -224,7 +224,7 @@ const EuclideanNotation: React.FC<{ pattern: number[] }> = ({ pattern }) => {
             ))}
         </div>
     );
-};
+});
 
 // Form timeline with playhead
 interface FormTimelineProps {
@@ -233,11 +233,11 @@ interface FormTimelineProps {
     isPlaying: boolean;
 }
 
-const FormTimeline: React.FC<FormTimelineProps> = ({ form, currentTime, isPlaying }) => {
+const FormTimeline = React.memo<FormTimelineProps>(({ form, currentTime, isPlaying }) => {
     // Assume each section is roughly equal duration
     // In a real app, this would come from the composition data
     const sectionDuration = 15; // seconds per section (estimated)
-    const totalDuration = form.length * sectionDuration;
+    const totalDuration = useMemo(() => form.length * sectionDuration, [form.length]);
     const currentSection = Math.floor(currentTime / sectionDuration);
     const sectionProgress = ((currentTime % sectionDuration) / sectionDuration) * 100;
 
@@ -289,7 +289,7 @@ const FormTimeline: React.FC<FormTimelineProps> = ({ form, currentTime, isPlayin
             )}
         </div>
     );
-};
+});
 
 // Legacy export for backwards compatibility
 export const EuclideanCircle = ({ pattern }: { pattern: number[] }) => {

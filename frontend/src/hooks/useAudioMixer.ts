@@ -2,6 +2,7 @@ import { useState, useRef, useCallback, useEffect } from 'react';
 import type { InstrumentAudioResult, Instrument } from '../types/music';
 import { AudioError } from '../types/errors';
 import { base64ToArrayBuffer } from '../utils/audio';
+import { getAudioContext } from '../utils/audioContext';
 
 interface TrackState {
     instrument: Instrument;
@@ -52,12 +53,12 @@ export const useAudioMixer = (audioResults: InstrumentAudioResult[]) => {
         }
 
         const initAudio = async () => {
-            // Create or resume audio context
+            // Get shared audio context (pre-warmed on user interaction)
             if (!audioContextRef.current) {
                 try {
-                    audioContextRef.current = new (window.AudioContext || (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext)();
+                    audioContextRef.current = getAudioContext();
                 } catch (error) {
-                    console.error('[AudioMixer] Failed to create AudioContext:', error);
+                    console.error('[AudioMixer] Failed to get AudioContext:', error);
                     // All tracks fail if context can't be created
                     const failedTracks = new Map<Instrument, AudioError>();
                     const contextError = new AudioError(
