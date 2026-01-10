@@ -1,0 +1,28 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(tree:*)",
+      "Bash(cat:*)",
+      "Bash(ls:*)",
+      "Bash(npx tsc:*)",
+      "Bash(npm install:*)",
+      "Bash(npm run test:run:*)",
+      "Bash(dir:*)",
+      "Bash(find:*)",
+      "Bash(findstr:*)",
+      "Bash(npm test:*)",
+      "Bash(npm run test:coverage:*)",
+      "Bash(if not exist \"d:\\\\asian-music\\\\frontend\\\\src\\\\hooks\" mkdir \"d:\\\\asian-music\\\\frontend\\\\src\\\\hooks\")",
+      "Bash(npx vitest:*)",
+      "Bash(timeout 60 npx vitest:*)",
+      "Bash(npm run build:*)",
+      "Bash(npx vite build)",
+      "Bash(npm ls:*)",
+      "Bash(wc:*)",
+      "Bash(timeout 90 npm run test:*)",
+      "Bash(git init:*)",
+      "Bash(git remote add:*)",
+      "Bash(git add:*)"
+    ]
+  }
+}

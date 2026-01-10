@@ -1,0 +1,21 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  body {
+    @apply bg-stone-50 text-stone-900;
+  }
+
+  /* Focus indicators for keyboard accessibility */
+  button:focus-visible,
+  [role="button"]:focus-visible,
+  a:focus-visible {
+    @apply outline-2 outline-offset-2 outline-red-600;
+  }
+
+  input:focus-visible,
+  select:focus-visible {
+    @apply ring-2 ring-amber-500 ring-offset-1;
+  }
+}
