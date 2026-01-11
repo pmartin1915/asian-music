@@ -41,6 +41,7 @@ AudioPlayer / MixerPlayer --> Web Audio API playback
 - **MathDisplay:** Pentatonic scale, Euclidean rhythm geometry, musical form visualization
 - **useGeneration:** Orchestrates compose -> generate flow with partial success handling
 - **useAudioMixer:** Web Audio API multi-track playback with per-track volume/mute
+- **useKeyboardShortcuts:** Keyboard shortcuts for playback (Space, Arrow keys, Home/End)
 
 ## Error Handling
 
@@ -86,6 +87,18 @@ cd frontend && npm test           # Watch mode
 cd frontend && npm run test:run   # Single run
 cd functions && npm test          # Backend tests
 ```
+
+## Keyboard Shortcuts
+
+| Key | Action |
+|-----|--------|
+| Space | Toggle play/pause |
+| ← Left Arrow | Seek backward 5 seconds |
+| → Right Arrow | Seek forward 5 seconds |
+| Home | Jump to beginning |
+| End | Jump to end |
+
+Shortcuts are active when audio is loaded and no input field is focused.
 
 ## Known Considerations
 

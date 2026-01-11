@@ -8,21 +8,39 @@ import type {
     JobStatus,
 } from '../types/music';
 
+/**
+ * Represents a step in the generation process.
+ */
 interface GenerationStep {
+    /** Display name of the step (e.g., "Composing structure", "Synthesizing erhu") */
     name: string;
+    /** Current status of this step */
     status: 'pending' | 'active' | 'complete' | 'error';
 }
 
+/**
+ * Internal state for the generation process.
+ */
 interface GenerationState {
+    /** Overall job status: pending → composing → synthesizing → complete/error */
     status: JobStatus;
+    /** Human-readable description of current step */
     currentStep: string;
+    /** Overall progress percentage (0-100) */
     progress: number;
+    /** Array of all steps in the generation pipeline */
     steps: GenerationStep[];
+    /** Index of the currently active step */
     currentStepIndex: number;
+    /** The Gemini-generated composition structure (scale, motif, form, etc.) */
     composition: Composition | null;
+    /** Successfully generated audio results */
     audioResults: InstrumentAudioResult[];
+    /** Error if generation failed */
     error: ApiError | GenerationError | null;
+    /** Instruments that failed to generate */
     failedInstruments: string[];
+    /** Whether failed instruments can be retried */
     canRetryFailed: boolean;
 }
 
@@ -39,6 +57,31 @@ const initialState: GenerationState = {
     canRetryFailed: false,
 };
 
+/**
+ * Hook for orchestrating the music generation process.
+ *
+ * Manages the two-phase generation flow:
+ * 1. **Compose**: Gemini 2.0 Flash generates composition structure (scale, motif, form)
+ * 2. **Synthesize**: Lyria-002 generates audio for each selected instrument
+ *
+ * Supports partial success - if some instruments fail, successfully generated
+ * tracks are still playable and failed instruments can be retried.
+ *
+ * @example
+ * ```tsx
+ * const { generate, status, audioResults, failedInstruments, retryFailed } = useGeneration();
+ *
+ * // Start generation
+ * await generate({ mode: 'gong', root: 'C', tempo: 80, instruments: ['erhu', 'pipa'], mood: 'calm' });
+ *
+ * // Check for partial failures
+ * if (failedInstruments.length > 0) {
+ *   await retryFailed();
+ * }
+ * ```
+ *
+ * @returns Generation state and control methods
+ */
 export const useGeneration = () => {
     const [state, setState] = useState<GenerationState>(initialState);
     const [isGenerating, setIsGenerating] = useState(false);

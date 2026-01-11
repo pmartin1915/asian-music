@@ -56,6 +56,7 @@ export const MixerPlayer = forwardRef<MixerPlayerRef, MixerPlayerProps>(
     };
 
     const handleProgressClick = (e: React.MouseEvent<HTMLDivElement>) => {
+        if (mixer.duration <= 0) return;
         const rect = e.currentTarget.getBoundingClientRect();
         const clickX = e.clientX - rect.left;
         const percentage = clickX / rect.width;
@@ -94,6 +95,7 @@ export const MixerPlayer = forwardRef<MixerPlayerRef, MixerPlayerProps>(
                                     onChange={(e) => mixer.setTrackVolume(instrument, parseFloat(e.target.value))}
                                     className="w-16 h-1 accent-silk-amber"
                                     disabled={track.muted}
+                                    aria-label={`${instrument} volume`}
                                 />
 
                                 {/* Mute button */}
@@ -119,6 +121,8 @@ export const MixerPlayer = forwardRef<MixerPlayerRef, MixerPlayerProps>(
                     {/* Play/Pause Button */}
                     <button
                         onClick={mixer.togglePlay}
+                        aria-label={mixer.isPlaying ? 'Pause' : 'Play'}
+                        aria-pressed={mixer.isPlaying}
                         className="w-12 h-12 rounded-full bg-silk-stone text-white flex items-center justify-center hover:bg-black transition-colors"
                     >
                         {mixer.isPlaying ? '⏸' : '▶'}
@@ -133,6 +137,11 @@ export const MixerPlayer = forwardRef<MixerPlayerRef, MixerPlayerProps>(
                     <div
                         className="flex-1 h-2 bg-gray-200 rounded-full overflow-hidden cursor-pointer"
                         onClick={handleProgressClick}
+                        role="slider"
+                        aria-label="Playback position"
+                        aria-valuemin={0}
+                        aria-valuemax={100}
+                        aria-valuenow={Math.round(progress)}
                     >
                         <div
                             className="h-full bg-silk-amber transition-all duration-100"

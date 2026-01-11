@@ -1,4 +1,5 @@
 import { useRef, useState, useEffect, useImperativeHandle, forwardRef, useCallback } from 'react';
+import toast from 'react-hot-toast';
 import type { InstrumentAudioResult } from '../types/music';
 import { base64ToBlobUrl } from '../utils/audio';
 import type { PlaybackControls } from '../hooks/useKeyboardShortcuts';
@@ -37,13 +38,20 @@ export const AudioPlayer = forwardRef<AudioPlayerRef, AudioPlayerProps>(
             return;
         }
 
-        const urls = audioResults.map((result) => {
+        const urls: string[] = [];
+        let failedCount = 0;
+
+        audioResults.forEach((result) => {
             try {
-                return base64ToBlobUrl(result.audioContent);
+                urls.push(base64ToBlobUrl(result.audioContent));
             } catch {
-                return '';
+                failedCount++;
             }
-        }).filter(Boolean);
+        });
+
+        if (failedCount > 0) {
+            toast.error(`Failed to decode ${failedCount} track(s)`);
+        }
 
         setTrackUrls((prev) => {
             // Cleanup previous URLs before setting new ones
@@ -165,13 +173,22 @@ export const AudioPlayer = forwardRef<AudioPlayerRef, AudioPlayerProps>(
 
                     <button
                         onClick={togglePlay}
+                        aria-label={isPlaying ? 'Pause' : 'Play'}
+                        aria-pressed={isPlaying}
                         className="w-12 h-12 rounded-full bg-silk-stone text-white flex items-center justify-center hover:bg-black transition-colors"
                     >
                         {isPlaying ? '⏸' : '▶'}
                     </button>
 
                     <div className="flex-1">
-                        <div className="h-2 bg-gray-200 rounded-full overflow-hidden">
+                        <div
+                            className="h-2 bg-gray-200 rounded-full overflow-hidden"
+                            role="progressbar"
+                            aria-label="Playback progress"
+                            aria-valuemin={0}
+                            aria-valuemax={100}
+                            aria-valuenow={Math.round(progress)}
+                        >
                             <div
                                 className="h-full bg-silk-amber transition-all duration-100"
                                 style={{ width: `${progress}%` }}
