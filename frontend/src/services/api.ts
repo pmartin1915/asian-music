@@ -1,10 +1,12 @@
 import { httpsCallable } from 'firebase/functions';
 import { getFunctions, connectFunctionsEmulator } from 'firebase/functions';
 import { getApp, getApps, initializeApp } from 'firebase/app';
-import type { CompositionParams, Composition, AudioResult, PentatonicMode, Mood } from '../types/music';
+import { getAuth } from 'firebase/auth';
+import type { CompositionParams, Composition, AudioResult, PentatonicMode, Mood, Instrument } from '../types/music';
 import { ApiError, mapFirebaseError } from '../types/errors';
 import { withRetry } from '../utils/retry';
 import { API_TIMEOUTS, RETRY } from '../config/constants';
+import { synthesizeInstrument } from '../audio';
 
 /** Request payload for the generate audio endpoint */
 interface GenerateAudioRequest {
@@ -26,8 +28,10 @@ const firebaseConfig = {
 const app = !getApps().length ? initializeApp(firebaseConfig) : getApp();
 const functions = getFunctions(app);
 
+// Export auth instance for use in auth hooks
+export const auth = getAuth(app);
 // Use emulator if in dev mode
-if (import.meta.env.DEV) {
+if (import.meta.env.VITE_USE_EMULATOR === 'true') {
     connectFunctionsEmulator(functions, "localhost", 5001);
 }
 
@@ -133,5 +137,37 @@ export const generateAudio = async (
             throw error;
         }
         throw mapFirebaseError(error);
+    }
+};
+
+/**
+ * Synthesizes audio locally using Web Audio API.
+ * This is the preferred method - no network latency, full control.
+ *
+ * @param composition - The composition structure from composeMusic
+ * @param instrument - The instrument to synthesize
+ * @param context - Original composition parameters for context
+ * @returns The generated audio result with base64 WAV content
+ */
+export const synthesizeAudio = async (
+    composition: Composition,
+    instrument: Instrument,
+    context: CompositionParams
+): Promise<AudioResult> => {
+    console.log(`[API] Synthesizing ${instrument} locally...`);
+
+    try {
+        const result = await synthesizeInstrument(composition, instrument, context);
+
+        console.log(`[API] ${instrument} synthesis complete (${Math.round(result.audioContent.length / 1024)}KB)`);
+
+        return result;
+    } catch (error) {
+        console.error(`[API] Local synthesis failed for ${instrument}:`, error);
+        throw new ApiError(
+            `Failed to synthesize ${instrument}: ${error instanceof Error ? error.message : 'Unknown error'}`,
+            'GENERATION_FAILED',
+            false // Not retryable - local synthesis error
+        );
     }
 };

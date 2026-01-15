@@ -1,3 +1,3 @@
 export * from "./compose";
-export * from "./generate";
+// Note: generate.ts (Lyria API) is no longer used - replaced by frontend Web Audio synthesis
 

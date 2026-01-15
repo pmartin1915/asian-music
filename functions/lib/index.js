@@ -15,5 +15,5 @@ var __exportStar = (this && this.__exportStar) || function(m, exports) {
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 __exportStar(require("./compose"), exports);
-__exportStar(require("./generate"), exports);
+// Note: generate.ts (Lyria API) is no longer used - replaced by frontend Web Audio synthesis
 //# sourceMappingURL=index.js.map

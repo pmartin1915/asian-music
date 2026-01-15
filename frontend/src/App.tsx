@@ -5,7 +5,11 @@ import { MixerPlayer, type MixerPlayerRef } from './components/MixerPlayer';
 import { MathDisplay } from './components/MathDisplay';
 import { GenerationProgress } from './components/GenerationProgress';
 import { CompositionHistory } from './components/CompositionHistory';
+import { ErrorBoundary } from './components/ErrorBoundary';
 import { useGeneration } from './hooks/useGeneration';
+// Auth components removed - using local synthesis
+// import { AuthButton } from './components/AuthButton';
+// import { useAuth } from './hooks/useAuth';
 import { useCompositionHistory, type SavedComposition } from './hooks/useCompositionHistory';
 import { useKeyboardShortcuts } from './hooks/useKeyboardShortcuts';
 import type { PlaybackControls } from './hooks/useKeyboardShortcuts';
@@ -40,6 +44,10 @@ function App() {
     const audioPlayerRef = useRef<AudioPlayerRef>(null);
     const mixerPlayerRef = useRef<MixerPlayerRef>(null);
 
+    // Ref for focus management
+    const progressRef = useRef<HTMLDivElement>(null);
+    const generateButtonRef = useRef<HTMLButtonElement>(null);
+
     // Track active controls for keyboard shortcuts
     // Using state + effect because refs don't trigger re-renders when populated
     const [activeControls, setActiveControls] = useState<PlaybackControls | null>(null);
@@ -61,6 +69,19 @@ function App() {
 
     // Enable keyboard shortcuts for playback control
     useKeyboardShortcuts({ controls: activeControls });
+
+    // Focus management: focus progress when generation starts, return to button when done
+    useEffect(() => {
+        if (generation.isGenerating) {
+            // Focus progress section when generation starts
+            progressRef.current?.focus();
+        } else if (generation.status === 'complete' || generation.status === 'error') {
+            // Return focus to generate button when done (if not loading a composition)
+            if (!loadedComposition) {
+                generateButtonRef.current?.focus();
+            }
+        }
+    }, [generation.isGenerating, generation.status, loadedComposition]);
 
     // Centralized blob URL cleanup
     const cleanupBlobUrl = useCallback(() => {
@@ -135,7 +156,6 @@ function App() {
                     </div>,
                     {
                         duration: 6000,
-                        icon: '⚠️',
                     }
                 );
             } else {
@@ -219,7 +239,6 @@ function App() {
             if (generation.failedInstruments.length > 0) {
                 toast.error(`Still failed: ${generation.failedInstruments.join(', ')}`, {
                     duration: 4000,
-                    icon: '⚠️',
                 });
             }
         } catch (error) {
@@ -271,29 +290,37 @@ function App() {
             <header className="bg-white shadow-sm py-4 sticky top-0 z-10">
                 <div className="container mx-auto px-4 flex justify-between items-center">
                     <h1 className="text-xl font-bold text-silk-stone flex items-center gap-2">
-                        <span className="text-2xl">🎵</span> Silk Road Composer
+                        Silk Road Composer
                     </h1>
-                    <div className="text-xs text-gray-500 font-mono">Powered by Vertex AI</div>
+                    <span className="text-xs text-gray-500 font-mono hidden sm:inline">Web Audio Synthesis</span>
                 </div>
             </header>
 
+            <ErrorBoundary>
             <main className="container mx-auto px-4 py-8 pb-24 flex-grow">
                 <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
                     {/* Left Sidebar: Controls */}
                     <div className="lg:col-span-4 space-y-6">
-                        <ControlPanel onGenerate={handleGenerate} isGenerating={generation.isGenerating} />
+                        <ControlPanel
+                            onGenerate={handleGenerate}
+                            isGenerating={generation.isGenerating}
+                            generateButtonRef={generateButtonRef}
+                        />
 
                         {/* Progress Display (shows during generation and when there are failures) */}
                         {showProgress ? (
-                            <GenerationProgress
-                                status={generation.status}
-                                currentStep={generation.currentStep}
-                                progress={generation.progress}
-                                totalSteps={generation.totalSteps}
-                                currentStepIndex={generation.currentStepIndex}
-                                steps={generation.steps}
-                                failedInstruments={generation.failedInstruments}
-                            />
+                            <div ref={progressRef} tabIndex={-1}>
+                                <GenerationProgress
+                                    status={generation.status}
+                                    currentStep={generation.currentStep}
+                                    progress={generation.progress}
+                                    totalSteps={generation.totalSteps}
+                                    currentStepIndex={generation.currentStepIndex}
+                                    steps={generation.steps}
+                                    failedInstruments={generation.failedInstruments}
+                                    onCancel={generation.abort}
+                                />
+                            </div>
                         ) : (
                             <div className="bg-white p-6 rounded-lg shadow-sm text-sm text-gray-600">
                                 <h3 className="font-bold text-gray-800 mb-2">How it works</h3>
@@ -307,9 +334,8 @@ function App() {
                         {generation.canRetryFailed && !generation.isGenerating && (
                             <button
                                 onClick={handleRetryFailed}
-                                className="w-full bg-amber-100 hover:bg-amber-200 text-amber-800 font-medium py-2 px-4 rounded-lg transition-colors flex items-center justify-center gap-2"
+                                className="w-full bg-amber-100 hover:bg-amber-200 text-amber-800 font-medium py-2 px-4 rounded-lg transition-colors"
                             >
-                                <span>🔄</span>
                                 Retry Failed Tracks ({generation.failedInstruments.length})
                             </button>
                         )}
@@ -334,6 +360,7 @@ function App() {
                     </div>
                 </div>
             </main>
+            </ErrorBoundary>
 
             {/* Footer Player - Use MixerPlayer for multi-track, AudioPlayer for single */}
             {audioResults.length > 1 ? (

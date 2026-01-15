@@ -5,6 +5,7 @@ import type { CompositionParams, PentatonicMode, Instrument, Mood } from '../typ
 interface ControlPanelProps {
   onGenerate: (params: CompositionParams) => void;
   isGenerating: boolean;
+  generateButtonRef?: React.RefObject<HTMLButtonElement>;
 }
 
 const MODES: PentatonicMode[] = ['gong', 'shang', 'jue', 'zhi', 'yu'];
@@ -27,7 +28,7 @@ const INSTRUMENT_INFO: Record<Instrument, string> = {
   dizi: 'Transverse bamboo flute with buzzing membrane',
 };
 
-export const ControlPanel: React.FC<ControlPanelProps> = ({ onGenerate, isGenerating }) => {
+export const ControlPanel: React.FC<ControlPanelProps> = ({ onGenerate, isGenerating, generateButtonRef }) => {
   const [mode, setMode] = useState<PentatonicMode>('gong');
   const [root, setRoot] = useState<string>('C');
   const [tempo, setTempo] = useState<number>(72);
@@ -141,6 +142,7 @@ export const ControlPanel: React.FC<ControlPanelProps> = ({ onGenerate, isGenera
       </div>
 
       <button
+        ref={generateButtonRef}
         onClick={handleSubmit}
         disabled={isGenerating || instruments.length === 0}
         className={`w-full py-3 rounded-lg font-bold text-white transition-all ${

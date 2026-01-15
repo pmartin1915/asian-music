@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useCallback, useRef } from 'react';
 import type { SavedComposition } from '../hooks/useCompositionHistory';
 
 interface CompositionHistoryProps {
@@ -14,6 +14,53 @@ export const CompositionHistory: React.FC<CompositionHistoryProps> = ({
     onDelete,
     onClear,
 }) => {
+    const [focusedIndex, setFocusedIndex] = useState<number>(-1);
+    const listRef = useRef<HTMLDivElement>(null);
+
+    const handleKeyDown = useCallback((e: React.KeyboardEvent, index: number, item: SavedComposition) => {
+        switch (e.key) {
+            case 'Enter':
+            case ' ':
+                e.preventDefault();
+                onSelect(item);
+                break;
+            case 'ArrowDown':
+                e.preventDefault();
+                if (index < history.length - 1) {
+                    setFocusedIndex(index + 1);
+                    const nextItem = listRef.current?.querySelector(`[data-index="${index + 1}"]`) as HTMLElement;
+                    nextItem?.focus();
+                }
+                break;
+            case 'ArrowUp':
+                e.preventDefault();
+                if (index > 0) {
+                    setFocusedIndex(index - 1);
+                    const prevItem = listRef.current?.querySelector(`[data-index="${index - 1}"]`) as HTMLElement;
+                    prevItem?.focus();
+                }
+                break;
+            case 'Delete':
+            case 'Backspace':
+                e.preventDefault();
+                onDelete(item.id);
+                break;
+            case 'Home':
+                e.preventDefault();
+                setFocusedIndex(0);
+                const firstItem = listRef.current?.querySelector('[data-index="0"]') as HTMLElement;
+                firstItem?.focus();
+                break;
+            case 'End':
+                e.preventDefault();
+                const lastIndex = history.length - 1;
+                setFocusedIndex(lastIndex);
+                const lastItem = listRef.current?.querySelector(`[data-index="${lastIndex}"]`) as HTMLElement;
+                lastItem?.focus();
+                break;
+        }
+    }, [history.length, onSelect, onDelete]);
+
     if (history.length === 0) {
         return null;
     }
@@ -33,15 +80,15 @@ export const CompositionHistory: React.FC<CompositionHistoryProps> = ({
         return date.toLocaleDateString();
     };
 
-    const getModeEmoji = (mode: string): string => {
-        const modeEmojis: Record<string, string> = {
-            gong: '🏛️',
-            shang: '📯',
-            jue: '🌿',
-            zhi: '🔥',
-            yu: '🪶',
+    const getModeLabel = (mode: string): string => {
+        const modeLabels: Record<string, string> = {
+            gong: 'G',
+            shang: 'S',
+            jue: 'J',
+            zhi: 'Z',
+            yu: 'Y',
         };
-        return modeEmojis[mode] || '🎵';
+        return modeLabels[mode] || '?';
     };
 
     return (
@@ -57,14 +104,27 @@ export const CompositionHistory: React.FC<CompositionHistoryProps> = ({
                 </button>
             </div>
 
-            <div className="space-y-2 max-h-[300px] overflow-y-auto">
-                {history.map((item) => (
+            <div
+                ref={listRef}
+                className="space-y-2 max-h-[300px] overflow-y-auto"
+                role="listbox"
+                aria-label="Recent compositions"
+            >
+                {history.map((item, index) => (
                     <div
                         key={item.id}
-                        className="group flex items-center gap-2 p-2 rounded-lg hover:bg-stone-50 cursor-pointer transition-colors"
+                        data-index={index}
+                        role="option"
+                        tabIndex={0}
+                        aria-selected={focusedIndex === index}
+                        className="group flex items-center gap-2 p-2 rounded-lg hover:bg-stone-50 cursor-pointer transition-colors focus:outline-none focus:ring-2 focus:ring-silk-amber focus:bg-stone-50"
                         onClick={() => onSelect(item)}
+                        onKeyDown={(e) => handleKeyDown(e, index, item)}
+                        onFocus={() => setFocusedIndex(index)}
                     >
-                        <span className="text-lg">{getModeEmoji(item.params.mode)}</span>
+                        <span className="w-6 h-6 rounded bg-silk-amber text-white text-xs font-bold flex items-center justify-center">
+                            {getModeLabel(item.params.mode)}
+                        </span>
 
                         <div className="flex-1 min-w-0">
                             <div className="text-sm font-medium text-gray-800 truncate">
@@ -82,8 +142,9 @@ export const CompositionHistory: React.FC<CompositionHistoryProps> = ({
                                     e.stopPropagation();
                                     onDelete(item.id);
                                 }}
-                                className="opacity-0 group-hover:opacity-100 text-gray-400 hover:text-silk-red transition-all p-1"
+                                className="opacity-0 group-hover:opacity-100 focus:opacity-100 text-gray-400 hover:text-silk-red transition-all p-1"
                                 title="Delete"
+                                aria-label={`Delete ${item.params.mode} mode composition`}
                             >
                                 ×
                             </button>

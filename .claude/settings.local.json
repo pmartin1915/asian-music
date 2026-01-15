@@ -22,7 +22,31 @@
       "Bash(timeout 90 npm run test:*)",
       "Bash(git init:*)",
       "Bash(git remote add:*)",
-      "Bash(git add:*)"
+      "Bash(git add:*)",
+      "Bash(git commit -m \"$\\(cat <<''EOF''\nInitial commit: Silk Road Composer with enhanced error handling\n\nFeatures:\n- AI-powered traditional Asian music composition using pentatonic modes\n- React 18 + TypeScript + Vite + Tailwind CSS frontend\n- Firebase Cloud Functions v2 backend\n- Gemini 2.0 Flash for composition, Lyria-002 for audio synthesis\n\nError handling improvements:\n- Typed errors \\(ApiError, AudioError, GenerationError\\)\n- GENERATION_FAILED error code for all-instrument failures\n- AudioError conditionally retryable \\(DECODE_FAILED\\)\n- Consolidated audio validation to api.ts\n- Exponential backoff retry with jitter\n\nUX enhancements:\n- GenerationProgress shows failed step indicators\n- Unified partial success toast\n- Visible retry button for failed instruments\n\nTest fixes:\n- Fixed MathDisplay SVG/circle query scoping\n- Fixed ControlPanel option name regex matchers\n\nCo-Authored-By: Claude Opus 4.5 <noreply@anthropic.com>\nEOF\n\\)\")",
+      "Bash(git branch:*)",
+      "Bash(git push:*)",
+      "Bash(git commit:*)",
+      "Bash(timeout 120 npm run test:run:*)",
+      "Bash(timeout 90 npx vitest run:*)",
+      "Bash(timeout 120 npx vitest run:*)",
+      "Bash(timeout 180 npm run test:run -- --reporter=dot)",
+      "Bash(tee:*)",
+      "Bash(NODE_OPTIONS=\"--max-old-space-size=4096\" npx vitest:*)",
+      "Bash(npm run dev:*)",
+      "Bash(timeout:*)",
+      "Bash(firebase projects:list:*)",
+      "Bash(firebase functions:list:*)",
+      "Bash(firebase apps:list:*)",
+      "Bash(firebase auth:export:*)",
+      "Bash(firebase apps:create:*)",
+      "Bash(firebase apps:sdkconfig:*)",
+      "Bash(gcloud services enable:*)",
+      "Bash(where:*)",
+      "Bash(firebase deploy:*)",
+      "Bash(firebase functions:log:*)",
+      "Bash(curl:*)",
+      "Bash(taskkill:*)"
     ]
   }
 }

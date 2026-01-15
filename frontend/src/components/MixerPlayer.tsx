@@ -72,7 +72,11 @@ export const MixerPlayer = forwardRef<MixerPlayerRef, MixerPlayerProps>(
             <div className="max-w-4xl mx-auto p-4">
                 {/* Track Mixer Controls */}
                 {audioResults.length > 1 && (
-                    <div className="flex gap-3 mb-4 justify-center flex-wrap">
+                    <div
+                        className="flex gap-3 mb-4 justify-center flex-wrap"
+                        role="region"
+                        aria-label="Track mixer controls"
+                    >
                         {Array.from(mixer.tracks.entries()).map(([instrument, track]) => (
                             <div
                                 key={instrument}
@@ -96,6 +100,7 @@ export const MixerPlayer = forwardRef<MixerPlayerRef, MixerPlayerProps>(
                                     className="w-16 h-1 accent-silk-amber"
                                     disabled={track.muted}
                                     aria-label={`${instrument} volume`}
+                                    aria-valuetext={`${Math.round(track.volume * 100)}%`}
                                 />
 
                                 {/* Mute button */}
@@ -129,7 +134,11 @@ export const MixerPlayer = forwardRef<MixerPlayerRef, MixerPlayerProps>(
                     </button>
 
                     {/* Time Display */}
-                    <span className="text-xs text-gray-500 font-mono min-w-[40px]">
+                    <span
+                        className="text-xs text-gray-500 font-mono min-w-[40px]"
+                        aria-live="off"
+                        aria-atomic="true"
+                    >
                         {formatTime(mixer.currentTime)}
                     </span>
 
@@ -138,10 +147,12 @@ export const MixerPlayer = forwardRef<MixerPlayerRef, MixerPlayerProps>(
                         className="flex-1 h-2 bg-gray-200 rounded-full overflow-hidden cursor-pointer"
                         onClick={handleProgressClick}
                         role="slider"
+                        tabIndex={0}
                         aria-label="Playback position"
                         aria-valuemin={0}
                         aria-valuemax={100}
                         aria-valuenow={Math.round(progress)}
+                        aria-valuetext={`${formatTime(mixer.currentTime)} of ${formatTime(mixer.duration)}`}
                     >
                         <div
                             className="h-full bg-silk-amber transition-all duration-100"

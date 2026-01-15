@@ -1,11 +1,12 @@
 import { useState, useCallback, useRef } from 'react';
-import { composeMusic, generateAudio } from '../services/api';
+import { composeMusic, synthesizeAudio } from '../services/api';
 import { ApiError, GenerationError } from '../types/errors';
 import type {
     CompositionParams,
     Composition,
     InstrumentAudioResult,
     JobStatus,
+    Instrument,
 } from '../types/music';
 
 /**
@@ -62,7 +63,7 @@ const initialState: GenerationState = {
  *
  * Manages the two-phase generation flow:
  * 1. **Compose**: Gemini 2.0 Flash generates composition structure (scale, motif, form)
- * 2. **Synthesize**: Lyria-002 generates audio for each selected instrument
+ * 2. **Synthesize**: Web Audio API synthesizes audio for each selected instrument locally
  *
  * Supports partial success - if some instruments fail, successfully generated
  * tracks are still playable and failed instruments can be retried.
@@ -180,12 +181,12 @@ export const useGeneration = () => {
                 }));
 
                 try {
-                    // generateAudio already validates audioContent and throws ApiError if missing
-                    const audioResult = await generateAudio(composition, instrument, params);
+                    // synthesizeAudio generates audio locally using Web Audio API
+                    const audioResult = await synthesizeAudio(composition, instrument as Instrument, params);
 
                     audioResults.push({
                         ...audioResult,
-                        instrument,
+                        instrument: instrument as Instrument,
                     });
 
                     setState((prev) => ({
@@ -315,9 +316,9 @@ export const useGeneration = () => {
             }));
 
             try {
-                // generateAudio already validates audioContent and throws ApiError if missing
-                const result = await generateAudio(composition, instrument, params);
-                retried.push({ ...result, instrument: instrument as InstrumentAudioResult['instrument'] });
+                // synthesizeAudio generates audio locally using Web Audio API
+                const result = await synthesizeAudio(composition, instrument as Instrument, params);
+                retried.push({ ...result, instrument: instrument as Instrument });
             } catch {
                 stillFailed.push(instrument);
             }

@@ -9,12 +9,13 @@ import type { Instrument } from '../types/music';
 vi.mock('../services/api', () => ({
     composeMusic: vi.fn(),
     generateAudio: vi.fn(),
+    synthesizeAudio: vi.fn(),
 }));
 
-import { composeMusic, generateAudio } from '../services/api';
+import { composeMusic, synthesizeAudio } from '../services/api';
 
 const mockedComposeMusic = composeMusic as ReturnType<typeof vi.fn>;
-const mockedGenerateAudio = generateAudio as ReturnType<typeof vi.fn>;
+const mockedSynthesizeAudio = synthesizeAudio as ReturnType<typeof vi.fn>;
 
 describe('useGeneration', () => {
     beforeEach(() => {
@@ -58,7 +59,7 @@ describe('useGeneration', () => {
 
         it('calls composeMusic with params', async () => {
             mockedComposeMusic.mockResolvedValue(mockComposition);
-            mockedGenerateAudio.mockResolvedValue(mockAudioResult);
+            mockedSynthesizeAudio.mockResolvedValue(mockAudioResult);
 
             const { result } = renderHook(() => useGeneration());
 
@@ -69,10 +70,10 @@ describe('useGeneration', () => {
             expect(mockedComposeMusic).toHaveBeenCalledWith(mockParams);
         });
 
-        it('calls generateAudio for each instrument', async () => {
+        it('calls synthesizeAudio for each instrument', async () => {
             const params = { ...mockParams, instruments: ['erhu', 'guzheng'] as Instrument[] };
             mockedComposeMusic.mockResolvedValue(mockComposition);
-            mockedGenerateAudio.mockResolvedValue(mockAudioResult);
+            mockedSynthesizeAudio.mockResolvedValue(mockAudioResult);
 
             const { result } = renderHook(() => useGeneration());
 
@@ -80,15 +81,15 @@ describe('useGeneration', () => {
                 await result.current.generate(params);
             });
 
-            expect(mockedGenerateAudio).toHaveBeenCalledTimes(2);
-            expect(mockedGenerateAudio).toHaveBeenCalledWith(mockComposition, 'erhu', params);
-            expect(mockedGenerateAudio).toHaveBeenCalledWith(mockComposition, 'guzheng', params);
+            expect(mockedSynthesizeAudio).toHaveBeenCalledTimes(2);
+            expect(mockedSynthesizeAudio).toHaveBeenCalledWith(mockComposition, 'erhu', params);
+            expect(mockedSynthesizeAudio).toHaveBeenCalledWith(mockComposition, 'guzheng', params);
         });
 
         it('updates audioResults as instruments complete', async () => {
             const params = { ...mockParams, instruments: ['erhu'] as Instrument[] };
             mockedComposeMusic.mockResolvedValue(mockComposition);
-            mockedGenerateAudio.mockResolvedValue(mockAudioResult);
+            mockedSynthesizeAudio.mockResolvedValue(mockAudioResult);
 
             const { result } = renderHook(() => useGeneration());
 
@@ -102,7 +103,7 @@ describe('useGeneration', () => {
 
         it('sets status to complete when all succeed', async () => {
             mockedComposeMusic.mockResolvedValue(mockComposition);
-            mockedGenerateAudio.mockResolvedValue(mockAudioResult);
+            mockedSynthesizeAudio.mockResolvedValue(mockAudioResult);
 
             const { result } = renderHook(() => useGeneration());
 
@@ -117,7 +118,7 @@ describe('useGeneration', () => {
 
         it('returns composition and audioResults on success', async () => {
             mockedComposeMusic.mockResolvedValue(mockComposition);
-            mockedGenerateAudio.mockResolvedValue(mockAudioResult);
+            mockedSynthesizeAudio.mockResolvedValue(mockAudioResult);
 
             const { result } = renderHook(() => useGeneration());
 
@@ -137,7 +138,7 @@ describe('useGeneration', () => {
 
         it('builds steps correctly for compose + instruments', async () => {
             mockedComposeMusic.mockResolvedValue(mockComposition);
-            mockedGenerateAudio.mockResolvedValue(mockAudioResult);
+            mockedSynthesizeAudio.mockResolvedValue(mockAudioResult);
 
             const { result } = renderHook(() => useGeneration());
 
@@ -202,7 +203,7 @@ describe('useGeneration', () => {
         it('continues when single instrument fails', async () => {
             const params = { ...mockParams, instruments: ['erhu', 'guzheng'] as Instrument[] };
             mockedComposeMusic.mockResolvedValue(mockComposition);
-            mockedGenerateAudio
+            mockedSynthesizeAudio
                 .mockResolvedValueOnce(mockAudioResult) // erhu succeeds
                 .mockRejectedValueOnce(new Error('Guzheng failed')); // guzheng fails
 
@@ -220,7 +221,7 @@ describe('useGeneration', () => {
         it('sets canRetryFailed to true on partial failure', async () => {
             const params = { ...mockParams, instruments: ['erhu', 'guzheng'] as Instrument[] };
             mockedComposeMusic.mockResolvedValue(mockComposition);
-            mockedGenerateAudio
+            mockedSynthesizeAudio
                 .mockResolvedValueOnce(mockAudioResult)
                 .mockRejectedValueOnce(new Error('Failed'));
 
@@ -237,7 +238,7 @@ describe('useGeneration', () => {
         it('tracks failedInstruments array', async () => {
             const params = { ...mockParams, instruments: ['erhu', 'guzheng'] as Instrument[] };
             mockedComposeMusic.mockResolvedValue(mockComposition);
-            mockedGenerateAudio
+            mockedSynthesizeAudio
                 .mockResolvedValueOnce(mockAudioResult)
                 .mockRejectedValueOnce(new Error('Failed'));
 
@@ -253,7 +254,7 @@ describe('useGeneration', () => {
         it('throws GenerationError when all instruments fail', async () => {
             const params = { ...mockParams, instruments: ['erhu'] as Instrument[] };
             mockedComposeMusic.mockResolvedValue(mockComposition);
-            mockedGenerateAudio.mockRejectedValue(new Error('All failed'));
+            mockedSynthesizeAudio.mockRejectedValue(new Error('All failed'));
 
             const { result } = renderHook(() => useGeneration());
 
@@ -270,7 +271,7 @@ describe('useGeneration', () => {
         it('retries only failed instruments', async () => {
             const params = { ...mockParams, instruments: ['erhu', 'guzheng'] as Instrument[] };
             mockedComposeMusic.mockResolvedValue(mockComposition);
-            mockedGenerateAudio
+            mockedSynthesizeAudio
                 .mockResolvedValueOnce(mockAudioResult)
                 .mockRejectedValueOnce(new Error('Failed'));
 
@@ -281,14 +282,14 @@ describe('useGeneration', () => {
             });
 
             // Now retry
-            mockedGenerateAudio.mockResolvedValue(mockAudioResult);
+            mockedSynthesizeAudio.mockResolvedValue(mockAudioResult);
 
             await act(async () => {
                 await result.current.retryFailed();
             });
 
-            // Should have called generateAudio for guzheng only
-            expect(mockedGenerateAudio).toHaveBeenLastCalledWith(
+            // Should have called synthesizeAudio for guzheng only
+            expect(mockedSynthesizeAudio).toHaveBeenLastCalledWith(
                 mockComposition,
                 'guzheng',
                 params
@@ -298,7 +299,7 @@ describe('useGeneration', () => {
         it('uses existing composition without re-composing', async () => {
             const params = { ...mockParams, instruments: ['erhu', 'guzheng'] as Instrument[] };
             mockedComposeMusic.mockResolvedValue(mockComposition);
-            mockedGenerateAudio
+            mockedSynthesizeAudio
                 .mockResolvedValueOnce(mockAudioResult)
                 .mockRejectedValueOnce(new Error('Failed'));
 
@@ -310,7 +311,7 @@ describe('useGeneration', () => {
 
             const composeCallsBefore = mockedComposeMusic.mock.calls.length;
 
-            mockedGenerateAudio.mockResolvedValue(mockAudioResult);
+            mockedSynthesizeAudio.mockResolvedValue(mockAudioResult);
 
             await act(async () => {
                 await result.current.retryFailed();
@@ -323,7 +324,7 @@ describe('useGeneration', () => {
         it('updates audioResults with successful retries', async () => {
             const params = { ...mockParams, instruments: ['erhu', 'guzheng'] as Instrument[] };
             mockedComposeMusic.mockResolvedValue(mockComposition);
-            mockedGenerateAudio
+            mockedSynthesizeAudio
                 .mockResolvedValueOnce(mockAudioResult)
                 .mockRejectedValueOnce(new Error('Failed'));
 
@@ -335,7 +336,7 @@ describe('useGeneration', () => {
 
             expect(result.current.audioResults).toHaveLength(1);
 
-            mockedGenerateAudio.mockResolvedValue(mockAudioResult);
+            mockedSynthesizeAudio.mockResolvedValue(mockAudioResult);
 
             await act(async () => {
                 await result.current.retryFailed();
@@ -347,7 +348,7 @@ describe('useGeneration', () => {
         it('clears canRetryFailed when all succeed', async () => {
             const params = { ...mockParams, instruments: ['erhu', 'guzheng'] as Instrument[] };
             mockedComposeMusic.mockResolvedValue(mockComposition);
-            mockedGenerateAudio
+            mockedSynthesizeAudio
                 .mockResolvedValueOnce(mockAudioResult)
                 .mockRejectedValueOnce(new Error('Failed'));
 
@@ -359,7 +360,7 @@ describe('useGeneration', () => {
 
             expect(result.current.canRetryFailed).toBe(true);
 
-            mockedGenerateAudio.mockResolvedValue(mockAudioResult);
+            mockedSynthesizeAudio.mockResolvedValue(mockAudioResult);
 
             await act(async () => {
                 await result.current.retryFailed();
@@ -444,7 +445,7 @@ describe('useGeneration', () => {
     describe('reset()', () => {
         it('resets state to initial values', async () => {
             mockedComposeMusic.mockResolvedValue(mockComposition);
-            mockedGenerateAudio.mockResolvedValue(mockAudioResult);
+            mockedSynthesizeAudio.mockResolvedValue(mockAudioResult);
 
             const { result } = renderHook(() => useGeneration());
 

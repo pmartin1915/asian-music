@@ -1,6 +1,7 @@
 import { onCall, HttpsError } from "firebase-functions/v2/https";
 import * as logger from "firebase-functions/logger";
 import { VertexAI } from "@google-cloud/vertexai";
+import { withRetry, isTransientError } from "./utils/retry";
 
 const PROJECT_ID = process.env.GOOGLE_CLOUD_PROJECT || "silk-road-composer";
 const LOCATION = "us-central1"; // Gemini 3 Pro availability
@@ -13,7 +14,7 @@ const VALID_MOODS = ['calm', 'heroic', 'melancholic', 'festive'] as const;
 export const compose = onCall({ timeoutSeconds: 60 }, async (request) => {
     logger.info("Compose called", { data: request.data });
 
-    // Authentication check - prevent unauthorized access
+    // Authentication check - require Firebase auth
     if (!request.auth) {
         throw new HttpsError("unauthenticated", "User must be logged in to use this service.");
     }
@@ -59,14 +60,14 @@ export const compose = onCall({ timeoutSeconds: 60 }, async (request) => {
 
         const prompt = `
             You are a Chinese classical music composer. Generate a composition structure.
-            
+
             Chinese Pentatonic Modes (intervals from root in semitones):
             - gong: [0, 2, 4, 7, 9]
             - shang: [0, 2, 5, 7, 10]
             - jue: [0, 3, 5, 8, 10]
             - zhi: [0, 2, 5, 7, 9]
             - yu: [0, 3, 5, 7, 10]
-            
+
             Context:
             - Mode: ${mode}
             - Root: ${root}
@@ -83,7 +84,7 @@ export const compose = onCall({ timeoutSeconds: 60 }, async (request) => {
             - End phrases on 1st or 5th scale degree
             - Use Euclidean rhythm: E(5,8) for accompaniment, E(3,8) for melody
             - Structure: A A' B A'' form
-            
+
             Respond ONLY with JSON matching this schema:
             {
                 "scale": ["C4", "D4", "E4", "G4", "A4"],
@@ -103,7 +104,16 @@ export const compose = onCall({ timeoutSeconds: 60 }, async (request) => {
             }
         `;
 
-        const result = await generativeModel.generateContent(prompt);
+        // Use retry logic for transient Gemini API failures
+        const result = await withRetry(
+            () => generativeModel.generateContent(prompt),
+            {
+                maxAttempts: 3,
+                baseDelayMs: 1000,
+                shouldRetry: isTransientError,
+            }
+        );
+
         const responseConfig = result.response;
         const text = responseConfig.candidates?.[0].content.parts[0].text;
 
@@ -119,7 +129,27 @@ export const compose = onCall({ timeoutSeconds: 60 }, async (request) => {
 
     } catch (error) {
         logger.error("Error generating composition", error);
-        // Sanitize error - do not expose internal details to client
+
+        // Provide specific error messages based on error type
+        const err = error as { code?: string; status?: number; message?: string };
+
+        if (err.code === 'RESOURCE_EXHAUSTED' || err.status === 429) {
+            throw new HttpsError("resource-exhausted", "Service temporarily unavailable due to high demand. Please try again in a few minutes.");
+        }
+
+        if (err.code === 'DEADLINE_EXCEEDED' || err.message?.includes('timeout')) {
+            throw new HttpsError("deadline-exceeded", "Generation took too long. Try selecting fewer instruments or a simpler composition.");
+        }
+
+        if (error instanceof SyntaxError) {
+            throw new HttpsError("internal", "Received unexpected response format. Please try again.");
+        }
+
+        if (err.code === 'UNAVAILABLE') {
+            throw new HttpsError("unavailable", "AI service is temporarily unavailable. Please try again later.");
+        }
+
+        // Default error message
         throw new HttpsError("internal", "Unable to generate composition at this time. Please try again.");
     }
 });

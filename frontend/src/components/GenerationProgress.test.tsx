@@ -66,7 +66,7 @@ describe('GenerationProgress', () => {
                     failedInstruments={['pipa']}
                 />
             );
-            expect(screen.getByText('⚠️')).toBeInTheDocument();
+            expect(screen.getByText('!')).toBeInTheDocument();
         });
 
         it('shows failure count in subtitle', () => {
@@ -226,7 +226,7 @@ describe('GenerationProgress', () => {
                 />
             );
             expect(screen.getByText('Composing structure')).toBeInTheDocument();
-            expect(screen.getByText('🎼')).toBeInTheDocument();
+            expect(screen.getByText('C')).toBeInTheDocument();
         });
 
         it('renders during active synthesizing status', () => {
@@ -241,7 +241,7 @@ describe('GenerationProgress', () => {
                 />
             );
             expect(screen.getByText('Synthesizing erhu')).toBeInTheDocument();
-            expect(screen.getByText('🎵')).toBeInTheDocument();
+            expect(screen.getByText('S')).toBeInTheDocument();
         });
 
         it('shows step X of Y during active generation', () => {

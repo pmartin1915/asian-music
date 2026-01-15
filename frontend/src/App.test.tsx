@@ -7,6 +7,7 @@ import { mockComposition, mockAudioResult } from './test/utils';
 vi.mock('./services/api', () => ({
   composeMusic: vi.fn(),
   generateAudio: vi.fn(),
+  synthesizeAudio: vi.fn(),
 }));
 
 // Mock react-hot-toast
@@ -27,6 +28,7 @@ import toast from 'react-hot-toast';
 
 const mockComposeMusic = api.composeMusic as ReturnType<typeof vi.fn>;
 const mockGenerateAudio = api.generateAudio as ReturnType<typeof vi.fn>;
+const mockSynthesizeAudio = api.synthesizeAudio as ReturnType<typeof vi.fn>;
 const mockToast = toast as unknown as {
   loading: ReturnType<typeof vi.fn>;
   success: ReturnType<typeof vi.fn>;
@@ -39,6 +41,7 @@ describe('App', () => {
     vi.clearAllMocks();
     mockComposeMusic.mockResolvedValue(mockComposition);
     mockGenerateAudio.mockResolvedValue(mockAudioResult);
+    mockSynthesizeAudio.mockResolvedValue(mockAudioResult);
   });
 
   describe('Rendering', () => {
@@ -48,10 +51,10 @@ describe('App', () => {
       expect(screen.getByText('Silk Road Composer')).toBeInTheDocument();
     });
 
-    it('renders Powered by Vertex AI badge', () => {
+    it('renders Web Audio Synthesis badge', () => {
       render(<App />);
 
-      expect(screen.getByText('Powered by Vertex AI')).toBeInTheDocument();
+      expect(screen.getByText('Web Audio Synthesis')).toBeInTheDocument();
     });
 
     it('renders ControlPanel component', () => {
@@ -97,7 +100,7 @@ describe('App', () => {
       });
     });
 
-    it('calls generateAudio for each selected instrument', async () => {
+    it('calls synthesizeAudio for each selected instrument', async () => {
       // Setup to select 2 instruments
       render(<App />);
 
@@ -110,7 +113,7 @@ describe('App', () => {
 
       await waitFor(() => {
         // Should be called twice (once for erhu, once for guzheng)
-        expect(mockGenerateAudio).toHaveBeenCalledTimes(2);
+        expect(mockSynthesizeAudio).toHaveBeenCalledTimes(2);
       });
     });
 
@@ -156,8 +159,8 @@ describe('App', () => {
       });
     });
 
-    it('shows error toast when generateAudio fails', async () => {
-      mockGenerateAudio.mockRejectedValue(new Error('Audio generation failed'));
+    it('shows error toast when synthesizeAudio fails', async () => {
+      mockSynthesizeAudio.mockRejectedValue(new Error('Audio synthesis failed'));
 
       render(<App />);
 
@@ -171,7 +174,7 @@ describe('App', () => {
     });
 
     it('handles missing audioContent gracefully', async () => {
-      mockGenerateAudio.mockResolvedValue({ mimeType: 'audio/wav', seed: 123 });
+      mockSynthesizeAudio.mockResolvedValue({ mimeType: 'audio/wav', seed: 123 });
 
       render(<App />);
 
