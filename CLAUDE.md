@@ -70,6 +70,7 @@ If some instruments fail during generation:
 2. **Partial Success:** Don't abort on single instrument failure
 3. **Blob Cleanup:** Revoke blob URLs when done to prevent memory leaks
 4. **Test Coverage:** Run `npm test` before committing
+5. **Auto-commit:** When completing tasks, commit changes without asking for confirmation
 
 ## Valid Parameters
 
