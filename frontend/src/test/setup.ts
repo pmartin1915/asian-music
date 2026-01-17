@@ -37,32 +37,36 @@ if (typeof global.Blob === 'undefined') {
 }
 
 // Mock AudioContext for Web Audio API (used by useAudioMixer)
-const mockAudioContext = {
-  createGain: vi.fn(() => ({
+class MockAudioContext {
+  destination = {};
+  currentTime = 0;
+  state: AudioContextState = 'running';
+
+  createGain = vi.fn(() => ({
     connect: vi.fn(),
     disconnect: vi.fn(),
     gain: { value: 1 },
-  })),
-  createBufferSource: vi.fn(() => ({
+  }));
+
+  createBufferSource = vi.fn(() => ({
     connect: vi.fn(),
     disconnect: vi.fn(),
     start: vi.fn(),
     stop: vi.fn(),
     buffer: null,
-  })),
-  decodeAudioData: vi.fn().mockResolvedValue({
+  }));
+
+  decodeAudioData = vi.fn().mockResolvedValue({
     duration: 60,
     numberOfChannels: 2,
     sampleRate: 44100,
-  }),
-  destination: {},
-  currentTime: 0,
-  state: 'running' as AudioContextState,
-  resume: vi.fn().mockResolvedValue(undefined),
-  suspend: vi.fn().mockResolvedValue(undefined),
-  close: vi.fn().mockResolvedValue(undefined),
-};
+  });
 
-global.AudioContext = vi.fn(() => mockAudioContext) as unknown as typeof AudioContext;
+  resume = vi.fn().mockResolvedValue(undefined);
+  suspend = vi.fn().mockResolvedValue(undefined);
+  close = vi.fn().mockResolvedValue(undefined);
+}
+
+global.AudioContext = MockAudioContext as unknown as typeof AudioContext;
 (global.window as unknown as { AudioContext: typeof AudioContext }).AudioContext = global.AudioContext;
 (global.window as unknown as { webkitAudioContext?: typeof AudioContext }).webkitAudioContext = global.AudioContext;

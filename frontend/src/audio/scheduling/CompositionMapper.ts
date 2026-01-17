@@ -228,10 +228,9 @@ function generateBassNotes(
         const scaleDegree = bassPattern[patternIndex % bassPattern.length];
         let pitch = scale[scaleDegree % scale.length];
 
-        // Apply bass octave offset (typically -1)
-        const totalOffset = octaveOffset - 1;
-        if (totalOffset !== 0) {
-            pitch = transposeNote(pitch, totalOffset * 12);
+        // Apply bass octave offset (from ROLE_OCTAVE_OFFSET, typically -1 for bass)
+        if (octaveOffset !== 0) {
+            pitch = transposeNote(pitch, octaveOffset * 12);
         }
 
         // Bass notes are typically longer

@@ -228,7 +228,7 @@ describe('App', () => {
     it('disables generate button during generation', async () => {
       // Make composeMusic slow to allow checking disabled state
       mockComposeMusic.mockImplementation(
-        () => new Promise((resolve) => setTimeout(() => resolve(mockComposition), 100))
+        () => new Promise((resolve) => setTimeout(() => resolve(mockComposition), 500))
       );
 
       render(<App />);
@@ -236,8 +236,10 @@ describe('App', () => {
       const generateButton = screen.getByRole('button', { name: /generate music/i });
       await userEvent.click(generateButton);
 
-      // Button should show loading state
-      expect(screen.getByRole('button', { name: /composing/i })).toBeDisabled();
+      // Button should show loading state - use waitFor since state transition may not be immediate
+      await waitFor(() => {
+        expect(screen.getByRole('button', { name: /composing/i })).toBeDisabled();
+      });
     });
 
     it('re-enables controls after generation completes', async () => {

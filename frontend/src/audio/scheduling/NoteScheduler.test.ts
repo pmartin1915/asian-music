@@ -354,9 +354,9 @@ describe('NoteScheduler', () => {
     describe('quantizeNotes', () => {
         it('rounds note start times to grid', () => {
             const notes = [
-                createMockNote({ startTime: 0.13 }),
-                createMockNote({ startTime: 0.26 }),
-                createMockNote({ startTime: 0.52 }),
+                createMockNote({ startTime: 0.1 }),   // 0.1/0.25 = 0.4 -> rounds to 0
+                createMockNote({ startTime: 0.26 }), // 0.26/0.25 = 1.04 -> rounds to 1 -> 0.25
+                createMockNote({ startTime: 0.52 }), // 0.52/0.25 = 2.08 -> rounds to 2 -> 0.5
             ];
 
             const quantized = quantizeNotes(notes, 0.25);

@@ -25,6 +25,7 @@ vi.mock('../utils/envelope', () => ({
     applyPluckedEnvelope: vi.fn(),
     applyExponentialEnvelope: vi.fn(),
     applySCurvePortamento: vi.fn(),
+    applyFilterEnvelope: vi.fn(),
 }));
 
 // Create comprehensive mock AudioContext
@@ -172,7 +173,7 @@ describe('ErhuVoice', () => {
             voice.scheduleNote(note, destination);
 
             // Should create at least 2 oscillators (main + sub)
-            expect(context.createOscillator).toHaveBeenCalledTimes(expect.any(Number));
+            expect(context.createOscillator.mock.calls.length).toBeGreaterThanOrEqual(2);
         });
 
         it('creates lowpass filter', () => {
@@ -296,8 +297,8 @@ describe('PipaVoice', () => {
 
             voice.scheduleNote(note, destination);
 
-            // Multiple gain nodes for mixing
-            expect(context.createGain).toHaveBeenCalledTimes(expect.any(Number));
+            // Multiple gain nodes for mixing (master + several for the voice)
+            expect(context.createGain.mock.calls.length).toBeGreaterThanOrEqual(2);
         });
 
         it('applies tremolo for long notes', () => {
