@@ -5,7 +5,9 @@ import { MixerPlayer, type MixerPlayerRef } from './components/MixerPlayer';
 import { MathDisplay } from './components/MathDisplay';
 import { GenerationProgress } from './components/GenerationProgress';
 import { CompositionHistory } from './components/CompositionHistory';
+import { PresetGallery } from './components/PresetGallery';
 import { ErrorBoundary } from './components/ErrorBoundary';
+import type { CompositionPreset } from './data/presets';
 import { useGeneration } from './hooks/useGeneration';
 // Auth components removed - using local synthesis
 // import { AuthButton } from './components/AuthButton';
@@ -15,6 +17,7 @@ import { useKeyboardShortcuts } from './hooks/useKeyboardShortcuts';
 import type { PlaybackControls } from './hooks/useKeyboardShortcuts';
 import { base64ToBlobUrl } from './utils/audio';
 import { warmAudioContext, closeAudioContext } from './utils/audioContext';
+import { parseMidiFile, midiToComposition, MidiImportError } from './utils/midiImport';
 import { getErrorMessage, isRetryableError, AudioError } from './types/errors';
 import { DEFAULTS } from './config/constants';
 import toast, { Toaster } from 'react-hot-toast';
@@ -36,6 +39,7 @@ function App() {
     });
     const [tempo, setTempo] = useState(72);
     const [loadedComposition, setLoadedComposition] = useState<Composition | null>(null);
+    const [importedParams, setImportedParams] = useState<Partial<CompositionParams> | undefined>(undefined);
 
     const generation = useGeneration();
     const compositionHistory = useCompositionHistory();
@@ -278,6 +282,66 @@ function App() {
         }
     };
 
+    const handleLoadPreset = (preset: CompositionPreset) => {
+        // Show the preset composition in visualizer immediately
+        setLoadedComposition(preset.composition);
+        setTempo(preset.params.tempo);
+
+        // Auto-generate audio from the preset
+        handleGenerate(preset.params);
+    };
+
+    const handleMidiImport = async (file: File) => {
+        try {
+            const buffer = await file.arrayBuffer();
+            const parsed = parseMidiFile(buffer);
+            const { composition, params } = midiToComposition(parsed);
+
+            // Set composition for visualization
+            setLoadedComposition(composition);
+            setTempo(params.tempo);
+
+            // Set params to prefill the control panel
+            setImportedParams(params);
+
+            // Clear previous audio
+            cleanupBlobUrl();
+            setAudioResults([]);
+            setPlaybackState({ isPlaying: false, currentTime: 0, duration: 0 });
+            generation.reset();
+
+            toast.success(
+                <div className="text-sm">
+                    <div className="font-medium">Imported: {file.name}</div>
+                    <div className="text-gray-500 text-xs mt-1">
+                        Detected: {params.mode} mode, {params.tempo} BPM
+                    </div>
+                </div>,
+                { duration: 4000 }
+            );
+        } catch (error) {
+            console.error('[App] MIDI import error:', error);
+
+            let message = 'Failed to import MIDI file';
+            if (error instanceof MidiImportError) {
+                switch (error.code) {
+                    case 'INVALID_FORMAT':
+                        message = 'Invalid MIDI file format';
+                        break;
+                    case 'EMPTY_FILE':
+                        message = 'MIDI file contains no notes';
+                        break;
+                    case 'UNSUPPORTED_FEATURE':
+                        message = error.message;
+                        break;
+                    default:
+                        message = 'Error parsing MIDI file';
+                }
+            }
+            toast.error(message, { duration: 5000 });
+        }
+    };
+
     // Show progress during generation OR when there are failed instruments to display
     const showProgress = generation.isGenerating ||
         (generation.status === 'complete' && generation.failedInstruments.length > 0);
@@ -305,6 +369,8 @@ function App() {
                             onGenerate={handleGenerate}
                             isGenerating={generation.isGenerating}
                             generateButtonRef={generateButtonRef}
+                            initialParams={importedParams}
+                            onMidiImport={handleMidiImport}
                         />
 
                         {/* Progress Display (shows during generation and when there are failures) */}
@@ -339,6 +405,12 @@ function App() {
                                 Retry Failed Tracks ({generation.failedInstruments.length})
                             </button>
                         )}
+
+                        {/* Demo Compositions */}
+                        <PresetGallery
+                            onSelect={handleLoadPreset}
+                            isGenerating={generation.isGenerating}
+                        />
 
                         {/* Composition History */}
                         <CompositionHistory

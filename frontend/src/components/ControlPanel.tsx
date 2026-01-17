@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Tooltip, InfoIcon } from './Tooltip';
 import type { CompositionParams, PentatonicMode, Instrument, Mood } from '../types/music';
 
@@ -6,6 +6,8 @@ interface ControlPanelProps {
   onGenerate: (params: CompositionParams) => void;
   isGenerating: boolean;
   generateButtonRef?: React.RefObject<HTMLButtonElement>;
+  initialParams?: Partial<CompositionParams>;
+  onMidiImport?: (file: File) => void;
 }
 
 const MODES: PentatonicMode[] = ['gong', 'shang', 'jue', 'zhi', 'yu'];
@@ -28,13 +30,43 @@ const INSTRUMENT_INFO: Record<Instrument, string> = {
   dizi: 'Transverse bamboo flute with buzzing membrane',
 };
 
-export const ControlPanel: React.FC<ControlPanelProps> = ({ onGenerate, isGenerating, generateButtonRef }) => {
+export const ControlPanel: React.FC<ControlPanelProps> = ({
+  onGenerate,
+  isGenerating,
+  generateButtonRef,
+  initialParams,
+  onMidiImport,
+}) => {
   const [mode, setMode] = useState<PentatonicMode>('gong');
   const [root, setRoot] = useState<string>('C');
   const [tempo, setTempo] = useState<number>(72);
   const [instruments, setInstruments] = useState<Instrument[]>(['erhu']);
   const [mood, setMood] = useState<Mood>('calm');
   const [seed, setSeed] = useState<number | ''>('');
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  // Update form when initialParams changes (e.g., from preset or MIDI import)
+  useEffect(() => {
+    if (initialParams) {
+      if (initialParams.mode) setMode(initialParams.mode);
+      if (initialParams.root) setRoot(initialParams.root);
+      if (initialParams.tempo) setTempo(initialParams.tempo);
+      if (initialParams.instruments) setInstruments(initialParams.instruments);
+      if (initialParams.mood) setMood(initialParams.mood);
+      if (initialParams.seed !== undefined) setSeed(initialParams.seed);
+    }
+  }, [initialParams]);
+
+  const handleMidiFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file && onMidiImport) {
+      onMidiImport(file);
+    }
+    // Reset input so same file can be selected again
+    if (fileInputRef.current) {
+      fileInputRef.current.value = '';
+    }
+  };
 
   const handleInstrumentChange = (inst: Instrument) => {
     setInstruments(prev =>
@@ -153,6 +185,31 @@ export const ControlPanel: React.FC<ControlPanelProps> = ({ onGenerate, isGenera
       >
         {isGenerating ? 'Composing...' : 'Generate Music'}
       </button>
+
+      {/* MIDI Import */}
+      {onMidiImport && (
+        <>
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept=".mid,.midi"
+            onChange={handleMidiFileChange}
+            className="hidden"
+            aria-label="Import MIDI file"
+          />
+          <button
+            onClick={() => fileInputRef.current?.click()}
+            disabled={isGenerating}
+            className={`w-full mt-2 py-2 rounded-lg font-medium border-2 transition-all ${
+              isGenerating
+                ? 'border-gray-300 text-gray-400 cursor-not-allowed'
+                : 'border-silk-stone text-silk-stone hover:bg-silk-stone hover:text-white'
+            }`}
+          >
+            Import MIDI
+          </button>
+        </>
+      )}
     </div>
   );
 };
