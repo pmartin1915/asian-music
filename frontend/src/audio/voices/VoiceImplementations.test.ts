@@ -2,12 +2,22 @@
  * Unit tests for voice implementations (ErhuVoice, GuzhengVoice, PipaVoice, DiziVoice).
  */
 
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach, type Mock } from 'vitest';
 import { ErhuVoice } from './ErhuVoice';
 import { GuzhengVoice } from './GuzhengVoice';
 import { PipaVoice } from './PipaVoice';
 import { DiziVoice } from './DiziVoice';
 import type { ScheduledNote, VoiceParameters } from '../types';
+
+// Type for mocked AudioContext with vi.fn() methods
+interface MockAudioContext extends BaseAudioContext {
+    createGain: Mock;
+    createOscillator: Mock;
+    createBiquadFilter: Mock;
+    createDelay: Mock;
+    createBuffer: Mock;
+    createBufferSource: Mock;
+}
 
 // Mock envelope utilities
 vi.mock('../utils/envelope', () => ({
@@ -86,7 +96,7 @@ function createMockAudioContext() {
         createBufferSource: vi.fn(createMockBufferSource),
         sampleRate: 44100,
         currentTime: 0,
-    } as unknown as BaseAudioContext;
+    } as unknown as MockAudioContext;
 }
 
 function createMockParams(): VoiceParameters {
@@ -124,7 +134,7 @@ function createMockNote(overrides: Partial<ScheduledNote> = {}): ScheduledNote {
 }
 
 describe('ErhuVoice', () => {
-    let context: BaseAudioContext;
+    let context: MockAudioContext;
     let params: VoiceParameters;
     let voice: ErhuVoice;
 
@@ -204,7 +214,7 @@ describe('ErhuVoice', () => {
 });
 
 describe('GuzhengVoice', () => {
-    let context: BaseAudioContext;
+    let context: MockAudioContext;
     let params: VoiceParameters;
     let voice: GuzhengVoice;
 
@@ -253,7 +263,7 @@ describe('GuzhengVoice', () => {
 });
 
 describe('PipaVoice', () => {
-    let context: BaseAudioContext;
+    let context: MockAudioContext;
     let params: VoiceParameters;
     let voice: PipaVoice;
 
@@ -303,7 +313,7 @@ describe('PipaVoice', () => {
 });
 
 describe('DiziVoice', () => {
-    let context: BaseAudioContext;
+    let context: MockAudioContext;
     let params: VoiceParameters;
     let voice: DiziVoice;
 
@@ -371,7 +381,7 @@ describe('Voice Common Functionality', () => {
 
     voiceClasses.forEach(({ name, Class, instrument }) => {
         describe(`${name}`, () => {
-            let context: BaseAudioContext;
+            let context: MockAudioContext;
             let params: VoiceParameters;
             let voice: InstanceType<typeof Class>;
 

@@ -14,9 +14,8 @@ import {
     humanizeNotes,
     sortNotesByTime,
     mergeTracksNotes,
-    SchedulingContext,
-    NoteScheduleCallback
 } from './NoteScheduler';
+import type { SchedulingContext, NoteScheduleCallback } from './NoteScheduler';
 import type { ScheduledNote, InstrumentTrack } from '../types';
 import type { Instrument } from '../../types/music';
 

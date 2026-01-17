@@ -2,10 +2,19 @@
  * Unit tests for BaseVoice abstract class.
  */
 
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach, type Mock } from 'vitest';
 import { BaseVoice } from './BaseVoice';
 import type { ScheduledNote, VoiceParameters, ADSREnvelope } from '../types';
 import type { Instrument } from '../../types/music';
+
+// Type for mocked AudioContext with vi.fn() methods
+interface MockAudioContext extends BaseAudioContext {
+    createGain: Mock;
+    createOscillator: Mock;
+    createBiquadFilter: Mock;
+    createBuffer: Mock;
+    createBufferSource: Mock;
+}
 
 // Mock the envelope module
 vi.mock('../utils/envelope', () => ({
@@ -111,14 +120,7 @@ function createMockAudioContext() {
         createBuffer: vi.fn(() => mockBuffer),
         createBufferSource: vi.fn(() => ({ ...mockBufferSource })),
         sampleRate: 44100,
-        _mockGain: mockGain,
-        _mockOscillator: mockOscillator,
-        _mockFilter: mockFilter,
-    } as unknown as BaseAudioContext & {
-        _mockGain: typeof mockGain;
-        _mockOscillator: typeof mockOscillator;
-        _mockFilter: typeof mockFilter;
-    };
+    } as unknown as MockAudioContext;
 }
 
 function createMockParams(): VoiceParameters {
@@ -148,7 +150,7 @@ function createMockNote(): ScheduledNote {
 }
 
 describe('BaseVoice', () => {
-    let context: ReturnType<typeof createMockAudioContext>;
+    let context: MockAudioContext;
     let params: VoiceParameters;
     let voice: TestVoice;
 
@@ -433,7 +435,7 @@ describe('BaseVoice', () => {
 
             // Simulate onended callback
             if (osc.onended) {
-                osc.onended();
+                osc.onended(new Event('ended'));
             }
 
             expect(voice.getActiveNodesCount()).toBe(0);

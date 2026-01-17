@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach, type Mock } from 'vitest';
 import { render, screen } from '@testing-library/react';
 import { WaveformDisplay, extractWaveformData, decodeAndExtractWaveform } from './WaveformDisplay';
 
@@ -387,13 +387,14 @@ describe('decodeAndExtractWaveform', () => {
       getChannelData: vi.fn(() => new Float32Array(10)),
     };
 
+    const mockDecodeAudioData = vi.fn().mockResolvedValue(mockAudioBuffer);
     const mockAudioContext = {
-      decodeAudioData: vi.fn().mockResolvedValue(mockAudioBuffer),
+      decodeAudioData: mockDecodeAudioData,
     } as unknown as AudioContext;
 
     await decodeAndExtractWaveform(base64Audio, mockAudioContext);
 
-    const callArg = mockAudioContext.decodeAudioData.mock.calls[0][0];
+    const callArg = mockDecodeAudioData.mock.calls[0][0];
     expect(callArg).toBeInstanceOf(ArrayBuffer);
   });
 

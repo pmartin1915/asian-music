@@ -96,30 +96,17 @@ function createMockVoice() {
 // Create mock composition
 function createMockComposition(overrides: Partial<Composition> = {}): Composition {
     return {
-        scale: {
-            root: 'C',
-            mode: 'gong',
-            notes: ['C4', 'D4', 'E4', 'G4', 'A4'],
-        },
+        scale: ['C4', 'D4', 'E4', 'G4', 'A4'],
         motif: {
-            contour: [0, 2, 1, -1, 0],
+            pitches: ['C4', 'E4', 'D4', 'C4', 'D4'],
             rhythm: [1, 0.5, 0.5, 1, 1],
         },
-        form: {
-            sections: [
-                {
-                    name: 'A',
-                    duration: 4,
-                    dynamics: 0.7,
-                    instruments: ['erhu'],
-                },
-            ],
+        form: ['A', 'B', 'A'],
+        instrumentRoles: {
+            erhu: 'melody',
         },
-        patterns: {
-            erhu: {
-                role: 'melody',
-                pattern: [1, 0, 1, 0, 1, 0, 1, 0],
-            },
+        euclideanPatterns: {
+            erhu: [1, 0, 1, 0, 1, 0, 1, 0],
         },
         ...overrides,
     };

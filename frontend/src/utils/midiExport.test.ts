@@ -190,22 +190,23 @@ describe('midiExport', () => {
   describe('downloadMidi', () => {
     let createObjectURLSpy: ReturnType<typeof vi.fn>;
     let revokeObjectURLSpy: ReturnType<typeof vi.fn>;
-    let appendChildSpy: ReturnType<typeof vi.fn>;
-    let removeChildSpy: ReturnType<typeof vi.fn>;
+    let appendChildSpy: ReturnType<typeof vi.spyOn>;
+    let removeChildSpy: ReturnType<typeof vi.spyOn>;
     let clickSpy: ReturnType<typeof vi.fn>;
 
     beforeEach(() => {
       createObjectURLSpy = vi.fn(() => 'blob:mock-url');
       revokeObjectURLSpy = vi.fn();
       clickSpy = vi.fn();
-      appendChildSpy = vi.fn();
-      removeChildSpy = vi.fn();
 
-      global.URL.createObjectURL = createObjectURLSpy;
-      global.URL.revokeObjectURL = revokeObjectURLSpy;
+      vi.stubGlobal('URL', {
+        ...URL,
+        createObjectURL: createObjectURLSpy,
+        revokeObjectURL: revokeObjectURLSpy,
+      });
 
-      vi.spyOn(document.body, 'appendChild').mockImplementation(appendChildSpy);
-      vi.spyOn(document.body, 'removeChild').mockImplementation(removeChildSpy);
+      appendChildSpy = vi.spyOn(document.body, 'appendChild').mockImplementation(() => null as unknown as Node);
+      removeChildSpy = vi.spyOn(document.body, 'removeChild').mockImplementation(() => null as unknown as Node);
       vi.spyOn(document, 'createElement').mockImplementation((tag: string) => {
         if (tag === 'a') {
           return {
