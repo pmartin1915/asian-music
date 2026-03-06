@@ -7,6 +7,8 @@ interface MathDisplayProps {
     tempo?: number;
     isPlaying?: boolean;
     currentTime?: number;
+    onExportMidi?: () => void;
+    sectionDuration?: number;
 }
 
 export const MathDisplay: React.FC<MathDisplayProps> = ({
@@ -14,6 +16,8 @@ export const MathDisplay: React.FC<MathDisplayProps> = ({
     tempo = 72,
     isPlaying = false,
     currentTime = 0,
+    onExportMidi,
+    sectionDuration = 15,
 }) => {
     if (!composition) {
         return (
@@ -34,6 +38,21 @@ export const MathDisplay: React.FC<MathDisplayProps> = ({
 
     return (
         <div className="bg-white p-6 rounded-lg shadow-lg space-y-8">
+            {/* Export Button */}
+            {onExportMidi && (
+                <div className="flex justify-end">
+                    <button
+                        onClick={onExportMidi}
+                        className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-silk-stone border border-silk-stone rounded-lg hover:bg-silk-stone hover:text-white transition-colors"
+                    >
+                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+                        </svg>
+                        Export MIDI
+                    </button>
+                </div>
+            )}
+
             {/* Scale Visualization */}
             <section>
                 <h3 className="text-lg font-bold text-silk-stone mb-4 flex items-center">
@@ -90,7 +109,7 @@ export const MathDisplay: React.FC<MathDisplayProps> = ({
                     <span className="w-2 h-8 bg-gray-400 mr-2 rounded-full"></span>
                     Musical Form
                 </h3>
-                <FormTimeline form={form} currentTime={currentTime} isPlaying={isPlaying} />
+                <FormTimeline form={form} currentTime={currentTime} isPlaying={isPlaying} sectionDuration={sectionDuration} />
             </section>
         </div>
     );
@@ -231,13 +250,12 @@ interface FormTimelineProps {
     form: string[];
     currentTime: number;
     isPlaying: boolean;
+    sectionDuration: number;
 }
 
-const FormTimeline = React.memo<FormTimelineProps>(({ form, currentTime, isPlaying }) => {
-    // Assume each section is roughly equal duration
-    // In a real app, this would come from the composition data
-    const sectionDuration = 15; // seconds per section (estimated)
-    const totalDuration = useMemo(() => form.length * sectionDuration, [form.length]);
+const FormTimeline = React.memo<FormTimelineProps>(({ form, currentTime, isPlaying, sectionDuration }) => {
+    // Each section has equal duration based on SECTION_DURATION constant
+    const totalDuration = useMemo(() => form.length * sectionDuration, [form.length, sectionDuration]);
     const currentSection = Math.floor(currentTime / sectionDuration);
     const sectionProgress = ((currentTime % sectionDuration) / sectionDuration) * 100;
 

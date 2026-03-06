@@ -212,6 +212,56 @@ describe('App', () => {
     });
   });
 
+  describe('MIDI Import', () => {
+    it('shows error toast when MIDI file is too large (>2MB)', async () => {
+      render(<App />);
+
+      // Create a mock file that's over 2MB
+      const largeFile = new File([''], 'large.mid', { type: 'audio/midi' });
+      Object.defineProperty(largeFile, 'size', { value: 3 * 1024 * 1024 }); // 3MB
+
+      // Find the hidden file input
+      const fileInput = document.querySelector('input[type="file"][accept=".mid,.midi"]') as HTMLInputElement;
+      expect(fileInput).toBeInTheDocument();
+
+      // Trigger file selection
+      await userEvent.upload(fileInput, largeFile);
+
+      await waitFor(() => {
+        expect(mockToast.error).toHaveBeenCalledWith(
+          expect.stringContaining('too large')
+        );
+      });
+    });
+
+    it('does not show error toast for files under 2MB size limit', async () => {
+      render(<App />);
+
+      // Create a small mock file (under 2MB)
+      const smallFile = new File(['test'], 'small.mid', { type: 'audio/midi' });
+      Object.defineProperty(smallFile, 'size', { value: 1024 }); // 1KB
+
+      // Find the hidden file input
+      const fileInput = document.querySelector('input[type="file"][accept=".mid,.midi"]') as HTMLInputElement;
+      expect(fileInput).toBeInTheDocument();
+
+      // Clear previous toast calls
+      mockToast.error.mockClear();
+
+      // Trigger file selection - it will fail parsing (invalid MIDI) but NOT due to size
+      await userEvent.upload(fileInput, smallFile);
+
+      await waitFor(() => {
+        // Should NOT show "too large" error
+        const calls = mockToast.error.mock.calls;
+        const hasSizeError = calls.some((call: unknown[]) =>
+          typeof call[0] === 'string' && call[0].includes('too large')
+        );
+        expect(hasSizeError).toBe(false);
+      });
+    });
+  });
+
   describe('Edge Cases', () => {
     it('skips audio generation if instruments array is empty', async () => {
       render(<App />);

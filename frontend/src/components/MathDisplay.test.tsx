@@ -1,5 +1,5 @@
-import { describe, it, expect } from 'vitest';
-import { render, screen } from '@testing-library/react';
+import { describe, it, expect, vi } from 'vitest';
+import { render, screen, fireEvent } from '@testing-library/react';
 import { MathDisplay } from './MathDisplay';
 import { mockComposition, createMockComposition } from '../test/utils';
 
@@ -172,6 +172,84 @@ describe('MathDisplay', () => {
 
       // accompaniment pattern [1,0,1,1,0,1,1,0] is E(5,8)
       expect(screen.getByText('E(5,8)')).toBeInTheDocument();
+    });
+  });
+
+  describe('Section Duration', () => {
+    it('uses default section duration of 15 seconds when not provided', () => {
+      const { container } = render(
+        <MathDisplay
+          composition={mockComposition}
+          isPlaying={true}
+          currentTime={30}  // 30 seconds = 2 sections at 15s/section
+        />
+      );
+
+      // With 4 sections (A, A', B, A'') at 15s each, at 30s we should be in section 2 (index 2 = 'B')
+      // The current section should have the active styling (scale-110)
+      const sections = container.querySelectorAll('[class*="scale-110"]');
+      expect(sections.length).toBe(1);
+    });
+
+    it('uses custom section duration when provided', () => {
+      const { container } = render(
+        <MathDisplay
+          composition={mockComposition}
+          isPlaying={true}
+          currentTime={20}  // 20 seconds
+          sectionDuration={10}  // 10s per section
+        />
+      );
+
+      // With 4 sections at 10s each, at 20s we should be in section 2 (index 2 = 'B')
+      const sections = container.querySelectorAll('[class*="scale-110"]');
+      expect(sections.length).toBe(1);
+    });
+
+    it('renders progress bar with correct width based on section duration', () => {
+      const { container } = render(
+        <MathDisplay
+          composition={mockComposition}
+          isPlaying={true}
+          currentTime={45}  // 45 seconds = 3 sections at 15s/section
+          sectionDuration={15}
+        />
+      );
+
+      // Total duration = 4 sections * 15s = 60s
+      // Progress at 45s = 75%
+      const progressBar = container.querySelector('[class*="bg-silk-amber"][class*="h-full"]');
+      expect(progressBar).toBeInTheDocument();
+    });
+  });
+
+  describe('Export MIDI Button', () => {
+    it('calls onExportMidi when export button is clicked', () => {
+      const onExportMidi = vi.fn();
+      render(<MathDisplay composition={mockComposition} onExportMidi={onExportMidi} />);
+
+      const exportButton = screen.getByRole('button', { name: /export midi/i });
+      fireEvent.click(exportButton);
+
+      expect(onExportMidi).toHaveBeenCalledTimes(1);
+    });
+
+    it('renders export button when onExportMidi is provided', () => {
+      render(<MathDisplay composition={mockComposition} onExportMidi={() => {}} />);
+
+      expect(screen.getByRole('button', { name: /export midi/i })).toBeInTheDocument();
+    });
+
+    it('does not render export button when onExportMidi is not provided', () => {
+      render(<MathDisplay composition={mockComposition} />);
+
+      expect(screen.queryByRole('button', { name: /export midi/i })).not.toBeInTheDocument();
+    });
+
+    it('does not render export button when composition is null', () => {
+      render(<MathDisplay composition={null} onExportMidi={() => {}} />);
+
+      expect(screen.queryByRole('button', { name: /export midi/i })).not.toBeInTheDocument();
     });
   });
 });

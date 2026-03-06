@@ -18,6 +18,8 @@ import type { PlaybackControls } from './hooks/useKeyboardShortcuts';
 import { base64ToBlobUrl } from './utils/audio';
 import { warmAudioContext, closeAudioContext } from './utils/audioContext';
 import { parseMidiFile, midiToComposition, MidiImportError } from './utils/midiImport';
+import { downloadMidi } from './utils/midiExport';
+import { SECTION_DURATION } from './audio/types';
 import { getErrorMessage, isRetryableError, AudioError } from './types/errors';
 import { DEFAULTS } from './config/constants';
 import toast, { Toaster } from 'react-hot-toast';
@@ -291,7 +293,18 @@ function App() {
         handleGenerate(preset.params);
     };
 
+    // Maximum MIDI file size (2MB)
+    const MAX_MIDI_SIZE = 2 * 1024 * 1024;
+
     const handleMidiImport = async (file: File) => {
+        // Validate file size before parsing
+        if (file.size > MAX_MIDI_SIZE) {
+            toast.error(
+                `MIDI file too large (${(file.size / 1024 / 1024).toFixed(1)}MB). Maximum size is 2MB.`
+            );
+            return;
+        }
+
         try {
             const buffer = await file.arrayBuffer();
             const parsed = parseMidiFile(buffer);
@@ -341,6 +354,13 @@ function App() {
             toast.error(message, { duration: 5000 });
         }
     };
+
+    const handleExportMidi = useCallback(() => {
+        const composition = generation.composition || loadedComposition;
+        if (!composition) return;
+        downloadMidi(composition, tempo, 'composition.mid');
+        toast.success('Downloaded: composition.mid');
+    }, [generation.composition, loadedComposition, tempo]);
 
     // Show progress during generation OR when there are failed instruments to display
     const showProgress = generation.isGenerating ||
@@ -428,6 +448,8 @@ function App() {
                             tempo={tempo}
                             isPlaying={playbackState.isPlaying}
                             currentTime={playbackState.currentTime}
+                            onExportMidi={handleExportMidi}
+                            sectionDuration={SECTION_DURATION}
                         />
                     </div>
                 </div>
